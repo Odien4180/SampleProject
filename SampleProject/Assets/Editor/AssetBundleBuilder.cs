@@ -28,8 +28,6 @@ public class AssetBundleBuilder : MonoBehaviour
         public string bundleName; 
         public int hash;
         public long size;
-
-        //현재 미사용(manifest파일 텍스트로 읽어와서 분석하면?사용가능할지도)
         public uint crc;
 
         public AssetBundleInfo(string bundleName, int hash, long size, uint crc)
