@@ -39,6 +39,13 @@ public class AssetBundleBuilder : MonoBehaviour
         }
     }
 
+    [Serializable]
+    public class AssetBundleInfos
+    {
+        [SerializeField]
+        public List<AssetBundleInfo> assetBundleInfos = new List<AssetBundleInfo>();
+    }
+
     public class AssetBundleBaseInfo
     {
         //에셋에 할당할 번들 이름
@@ -111,7 +118,11 @@ public class AssetBundleBuilder : MonoBehaviour
 
         }
 
-        string bundleInfoListJson = bundleInfoList.ToJson();
+        AssetBundleInfos bundleInfos = new AssetBundleInfos();
+        bundleInfos.assetBundleInfos = bundleInfoList;
+        
+        string bundleInfoListJson = JsonUtility.ToJson(bundleInfos);
+
 
         //async로 변경 가능
         File.WriteAllText(saveTargetPath + "/AssetBundleInfo.json", bundleInfoListJson);
