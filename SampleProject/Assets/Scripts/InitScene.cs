@@ -1,56 +1,64 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System;
 using System.IO;
+using FileInfoDef;
 
 public class InitScene : MonoBehaviour
 {
-    [Serializable]
-    public class AssetBundleInfo
-    {
-        public string bundleName;
-        public int hash;
-        public long size;
-        public uint crc;
+    private string resourceVersionFileUrl;
+    private string resourceVersionLocalFileUrl;
+    private string localAssetSaveUrl;
+    private string assetBundleInfoLocalUrl;
 
-        public AssetBundleInfo(string bundleName, int hash, long size, uint crc)
-        {
-            this.bundleName = bundleName;
-            this.hash = hash;
-            this.size = size;
-            this.crc = crc;
-        }
-    }
-    [Serializable]
-    public class AssetBundleInfos
-    {
-        public AssetBundleInfo[] assetBundleInfos;
-    }
+    private string downloadTargetResourceVersionUrl;
 
-    private string rootUrl = "";
-    private string localSaveUrl = "";
-    private string assetBundleInfoLocalUrl = "";
     public DownloadStream downloadStream;
 
     void Start()
     {
-        rootUrl = "https://testproject-cch.s3.ap-northeast-2.amazonaws.com/AssetBundles/";
-        localSaveUrl = Application.persistentDataPath + "/AssetBundles/";
-        assetBundleInfoLocalUrl = localSaveUrl + "AssetBundleInfo.json";
+        resourceVersionFileUrl = ConstValue.awsRootUrl + ConstValue.resourceVersionFileName;
 
+        resourceVersionLocalFileUrl = Application.persistentDataPath + "/" + ConstValue.resourceVersionFileName;
 
-        //우선적으로 AssetBundleInfo.json을 받는다.
+        localAssetSaveUrl = Application.persistentDataPath + "/AssetBundles/";
+
+        assetBundleInfoLocalUrl = localAssetSaveUrl + ConstValue.assetBundleInfoFileName;
+        
+
+        StartCoroutine(StartAssetBundleDownload());
+    }
+
+    //리소스 버전정보 파일 다운로드 완료 후 해당 리소스 버전 경로의 AssetBundleInfo.json을 받는다.
+    private IEnumerator StartAssetBundleDownload()
+    {
+        yield return StartCoroutine(DownloadResourceVersionInfo());
+
         var downloadAssetInfo = new DownloadInfo();
-        downloadAssetInfo.downloadUrl = rootUrl + "AssetBundleInfo.json";
+        downloadAssetInfo.downloadUrl = downloadTargetResourceVersionUrl + "/AssetBundles/" + ConstValue.assetBundleInfoFileName;
         downloadAssetInfo.localSaveUrl = assetBundleInfoLocalUrl;
 
-        downloadStream.SetDownloadStream(() =>
-        {
-            StartCoroutine(CrcCheckAndDownloadAssetBundle());
-        }, downloadAssetInfo);
+        downloadStream.SetDownloadStream(null, downloadAssetInfo);
 
-        downloadStream.OnWork();
+        yield return downloadStream.OnWork();
+
+        yield return StartCoroutine(CrcCheckAndDownloadAssetBundle());
+    }
+
+    //리소스 버전정보 파일 다운로드 및 다운받을 리소스 url(resourceVersionDirectory) 지정
+    private IEnumerator DownloadResourceVersionInfo()
+    {
+        var downloadAssetInfo = new DownloadInfo();
+        downloadAssetInfo.downloadUrl = resourceVersionFileUrl;
+        downloadAssetInfo.localSaveUrl = resourceVersionLocalFileUrl;
+
+        downloadStream.SetDownloadStream(null, downloadAssetInfo);
+
+        yield return downloadStream.OnWork();
+
+        string[] bundleInfoText = File.ReadAllLines(resourceVersionLocalFileUrl);
+        var resourceVersionInfo = JsonUtility.FromJson<ResourceVersionInfo>(bundleInfoText.AddStringArray());
+        downloadTargetResourceVersionUrl = ConstValue.awsRootUrl + resourceVersionInfo.version;
     }
 
     //다운받은 AssetBundleInfo.json을 로드해서 현재 가지고있는 에셋들과 crc값 비교
@@ -58,20 +66,20 @@ public class InitScene : MonoBehaviour
     private IEnumerator CrcCheckAndDownloadAssetBundle()
     {
         List<DownloadInfo> downloadInfos = new List<DownloadInfo>();
-        
-        string[] bundleInfoText = File.ReadAllLines(assetBundleInfoLocalUrl);
-        var bundleInfos = JsonUtility.FromJson<AssetBundleInfos>(bundleInfoText[0]);
+        string[] bundleInfoTextAllLine = File.ReadAllLines(assetBundleInfoLocalUrl);
+
+        var bundleInfos = JsonUtility.FromJson<AssetBundleInfos>(bundleInfoTextAllLine.AddStringArray());
 
         foreach(var bundleInfo in bundleInfos.assetBundleInfos)
         {
-            FileInfo fileInfo = new FileInfo(localSaveUrl + bundleInfo.bundleName);
+            FileInfo fileInfo = new FileInfo(localAssetSaveUrl + bundleInfo.bundleName);
 
             bool needDownload = true;
 
             //파일 존재하면 crc검증
             if (fileInfo.Exists)
             {
-                var bundleLoadRequest = AssetBundle.LoadFromFileAsync(localSaveUrl + bundleInfo.bundleName, bundleInfo.crc);
+                var bundleLoadRequest = AssetBundle.LoadFromFileAsync(localAssetSaveUrl + bundleInfo.bundleName, bundleInfo.crc);
 
                 yield return bundleLoadRequest;
 
@@ -83,15 +91,15 @@ public class InitScene : MonoBehaviour
             {
                 downloadInfos.Add(new DownloadInfo()
                 {
-                    downloadUrl = rootUrl + bundleInfo.bundleName,
-                    localSaveUrl = localSaveUrl + bundleInfo.bundleName,
+                    downloadUrl = downloadTargetResourceVersionUrl + "/AssetBundles/" + bundleInfo.bundleName,
+                    localSaveUrl = localAssetSaveUrl + bundleInfo.bundleName,
                     onComplete = _ =>
                     {
                         Debug.Log("Download Complete : " + bundleInfo.bundleName);
                     }
                 });
 
-                Debug.Log("Restore Download : " + bundleInfo.bundleName);
+                Debug.Log("Reservation Download : " + bundleInfo.bundleName);
             }
             else
             {
@@ -105,6 +113,6 @@ public class InitScene : MonoBehaviour
             Debug.Log("Download Stream Complete");
         }, downloadInfos.ToArray());
 
-        downloadStream.OnWork();
+        yield return downloadStream.OnWork();
     }
 }

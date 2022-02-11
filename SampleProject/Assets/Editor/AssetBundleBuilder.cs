@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
-using System.Linq;
+using FileInfoDef;
 
 /// <summary>
 /// 사용 조건
@@ -22,30 +22,6 @@ using System.Linq;
 
 public class AssetBundleBuilder : MonoBehaviour
 {
-    [Serializable]
-    public class AssetBundleInfo
-    {
-        public string bundleName; 
-        public int hash;
-        public long size;
-        public uint crc;
-
-        public AssetBundleInfo(string bundleName, int hash, long size, uint crc)
-        {
-            this.bundleName = bundleName;
-            this.hash = hash;
-            this.size = size;
-            this.crc = crc;
-        }
-    }
-
-    [Serializable]
-    public class AssetBundleInfos
-    {
-        [SerializeField]
-        public List<AssetBundleInfo> assetBundleInfos = new List<AssetBundleInfo>();
-    }
-
     public class AssetBundleBaseInfo
     {
         //에셋에 할당할 번들 이름
@@ -59,6 +35,10 @@ public class AssetBundleBuilder : MonoBehaviour
             this.assetPath = assetPath;
         }
     }
+
+    //버전 정보 (나중에 인자로 뺼 예정)
+    private static string resourceVersion = "1110";
+
 
     static void GetFileList(string path, ref List<AssetBundleBaseInfo> filePathList)
     {
@@ -128,6 +108,17 @@ public class AssetBundleBuilder : MonoBehaviour
         File.WriteAllText(saveTargetPath + "/AssetBundleInfo.json", bundleInfoListJson);
     }
 
+    //리소스 버전 정보 파일 생성
+    static void MakeResourceVersionInfo()
+    {
+        ResourceVersionInfo resourceVersionInfo = new ResourceVersionInfo();
+        resourceVersionInfo.version = resourceVersion;
+
+        string resourceVersionInfoJson = JsonUtility.ToJson(resourceVersionInfo);
+
+        File.WriteAllText(Directory.GetCurrentDirectory() + "/AssetBundles/" + ConstValue.resourceVersionFileName, resourceVersionInfoJson);
+    }
+
     [MenuItem("Bundles/Build All AssetBundles")]
     static void BuildAllAssetBundles()
     {
@@ -135,8 +126,11 @@ public class AssetBundleBuilder : MonoBehaviour
         GetFileList(Application.dataPath + "/AssetBundleResource", ref filePathList);
         filePathList.ForEach(x => Reimport(AssetImporter.GetAtPath(x.assetPath), x.bundleName));
 
-        string savePath = "AssetBundles";
+        string savePath = "AssetBundles/" + resourceVersion + "/AssetBundles";
+        ExtentionFunc.CheckAndCreateDirectory(Directory.GetCurrentDirectory().Replace("\\", "/") + "/" + savePath);
+        
         AssetBundleManifest manifest = BuildPipeline.BuildAssetBundles(savePath, BuildAssetBundleOptions.None, BuildTarget.Android);
-        MakeAssetBundleInfo(savePath, Directory.GetCurrentDirectory() + "/AssetBundles");
+        MakeAssetBundleInfo(savePath, Directory.GetCurrentDirectory() + "/AssetBundles/" + resourceVersion + "/AssetBundles");
+        MakeResourceVersionInfo();
     }
 }

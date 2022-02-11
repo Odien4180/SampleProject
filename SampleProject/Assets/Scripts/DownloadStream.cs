@@ -1,11 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using System.Linq;
-using System.IO;
 using UnityEngine.Networking;
 using System;
+using System.IO;
 
 //파일 다운로드 정보 클래스
 public class DownloadInfo
@@ -37,9 +36,9 @@ public class DownloadStream : MonoBehaviour
     }
 
     /// 다운로드 시작
-    public void OnWork()
+    public Coroutine OnWork()
     {
-        StartCoroutine(Download());
+        return StartCoroutine(Download());
     }
 
     private IEnumerator Download()
@@ -47,12 +46,8 @@ public class DownloadStream : MonoBehaviour
         foreach (var job in jobList)
         {
             ++currentJobIndex;
-
-            var directory = Path.GetDirectoryName(job.localSaveUrl);
-            if (string.IsNullOrEmpty(directory) && false == Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
+            
+            ExtentionFunc.CheckAndCreateDirectory(Path.GetFileNameWithoutExtension(job.localSaveUrl));
 
             UnityWebRequest uwr = new UnityWebRequest(job.downloadUrl, UnityWebRequest.kHttpVerbGET);
             uwr.downloadHandler = new DownloadHandlerFile(job.localSaveUrl);
@@ -62,7 +57,7 @@ public class DownloadStream : MonoBehaviour
                 request.completed += job.onComplete;
 
             yield return request;
-
+            
             //다운로드 실패
             if (request.webRequest.result == UnityWebRequest.Result.ConnectionError ||
                 request.webRequest.result == UnityWebRequest.Result.ProtocolError)
