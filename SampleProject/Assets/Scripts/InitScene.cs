@@ -18,6 +18,7 @@ public class InitScene : MonoBehaviour
     public DownloadStream downloadStream;
 
     public ProgressBar progressBar;
+    public TextMeshProUGUI noticeText;
 
     void Start()
     {
@@ -30,13 +31,20 @@ public class InitScene : MonoBehaviour
         assetBundleInfoLocalUrl = localAssetSaveUrl + ConstValue.assetBundleInfoFileName;
         
 
+
         StartCoroutine(StartAssetBundleDownload());
     }
 
     //리소스 버전정보 파일 다운로드 완료 후 해당 리소스 버전 경로의 AssetBundleInfo.json을 받는다.
     private IEnumerator StartAssetBundleDownload()
     {
+        noticeText.gameObject.SetActive(true);
+        noticeText.SetText("리소스 버전 확인 중...");
+        progressBar.gameObject.SetActive(false);
+
         yield return StartCoroutine(DownloadResourceVersionInfo());
+
+        noticeText.SetText("리소스 파일 검사중...");
 
         var downloadAssetInfo = new DownloadInfo();
         downloadAssetInfo.downloadUrl = downloadTargetResourceVersionUrl + "/AssetBundles/" + ConstValue.assetBundleInfoFileName;
@@ -46,7 +54,13 @@ public class InitScene : MonoBehaviour
 
         yield return downloadStream.OnWork();
 
+        noticeText.SetText("리소스 파일 다운로드 중...");
+        progressBar.gameObject.SetActive(true);
+
         yield return StartCoroutine(CrcCheckAndDownloadAssetBundle());
+
+        noticeText.SetText("리소스 다운로드 완료");
+        progressBar.gameObject.SetActive(false);
     }
 
     //리소스 버전정보 파일 다운로드 및 다운받을 리소스 url(resourceVersionDirectory) 지정

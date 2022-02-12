@@ -72,8 +72,6 @@ public class DownloadStream : MonoBehaviour
 
             uwr.downloadHandler.Dispose();
             uwr.Dispose();
-
-            yield return new WaitForSeconds(5.0f);
         }
 
         onStreamComplete?.Invoke(this);
