@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using FileInfoDef;
+using UnityEngine.UI;
+using TMPro;
 
 public class InitScene : MonoBehaviour
 {
@@ -14,6 +16,8 @@ public class InitScene : MonoBehaviour
     private string downloadTargetResourceVersionUrl;
 
     public DownloadStream downloadStream;
+
+    public ProgressBar progressBar;
 
     void Start()
     {
@@ -70,6 +74,8 @@ public class InitScene : MonoBehaviour
 
         var bundleInfos = JsonUtility.FromJson<AssetBundleInfos>(bundleInfoTextAllLine.AddStringArray());
 
+        if (progressBar) progressBar?.Init(0, bundleInfos.assetBundleInfos.Count, true);
+
         foreach(var bundleInfo in bundleInfos.assetBundleInfos)
         {
             FileInfo fileInfo = new FileInfo(localAssetSaveUrl + bundleInfo.bundleName);
@@ -93,8 +99,10 @@ public class InitScene : MonoBehaviour
                 {
                     downloadUrl = downloadTargetResourceVersionUrl + "/AssetBundles/" + bundleInfo.bundleName,
                     localSaveUrl = localAssetSaveUrl + bundleInfo.bundleName,
-                    onComplete = _ =>
+                    onComplete = x =>
                     {
+                        if (progressBar) progressBar.Init(downloadStream.currentJobIndex, (float)downloadStream.maxJobSize, true);
+                        
                         Debug.Log("Download Complete : " + bundleInfo.bundleName);
                     }
                 });
@@ -108,7 +116,7 @@ public class InitScene : MonoBehaviour
             }
         }
 
-        downloadStream.SetDownloadStream(() =>
+        downloadStream.SetDownloadStream(x =>
         {
             Debug.Log("Download Stream Complete");
         }, downloadInfos.ToArray());

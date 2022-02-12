@@ -11,21 +11,21 @@ public class DownloadInfo
 {
     public string downloadUrl;
     public string localSaveUrl;
-    public Action<AsyncOperation> onComplete;
+    public Action<DownloadInfo> onComplete;
     public Action onFailed;
 }
 
 public class DownloadStream : MonoBehaviour
 {
     private List<DownloadInfo> jobList = new List<DownloadInfo>();
-    private Action onStreamComplete = null;
-    private int maxJobSize = -1;
-    private int currentJobIndex = -1;
+    private Action<DownloadStream> onStreamComplete = null;
+    public int maxJobSize = -1;
+    public int currentJobIndex = -1;
 
     private List<DownloadInfo> failedJobList = new List<DownloadInfo>();
 
     /// 다운로드 스트림 객체 세팅
-    public DownloadStream SetDownloadStream(Action streamCompleteAction, params DownloadInfo[] downloadInfos)
+    public DownloadStream SetDownloadStream(Action<DownloadStream> streamCompleteAction, params DownloadInfo[] downloadInfos)
     {
         jobList = downloadInfos.ToList();
         onStreamComplete = streamCompleteAction;
@@ -53,9 +53,6 @@ public class DownloadStream : MonoBehaviour
             uwr.downloadHandler = new DownloadHandlerFile(job.localSaveUrl);
             var request = uwr.SendWebRequest();
 
-            if (job.onComplete != null)
-                request.completed += job.onComplete;
-
             yield return request;
             
             //다운로드 실패
@@ -68,12 +65,18 @@ public class DownloadStream : MonoBehaviour
                 //실패한 잡 리스트에 추가
                 failedJobList.Add(job);
             }
+            else
+            {
+                job.onComplete?.Invoke(job);
+            }
 
             uwr.downloadHandler.Dispose();
             uwr.Dispose();
+
+            yield return new WaitForSeconds(5.0f);
         }
 
-        onStreamComplete?.Invoke();
+        onStreamComplete?.Invoke(this);
     }
 
 }
