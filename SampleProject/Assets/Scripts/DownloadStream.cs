@@ -46,8 +46,7 @@ public class DownloadStream : MonoBehaviour
         foreach (var job in jobList)
         {
             ++currentJobIndex;
-            
-            ExtentionFunc.CheckAndCreateDirectory(Path.GetFileNameWithoutExtension(job.localSaveUrl));
+            ExtentionFunc.CheckAndCreateDirectory(Path.GetDirectoryName(job.localSaveUrl));
 
             UnityWebRequest uwr = new UnityWebRequest(job.downloadUrl, UnityWebRequest.kHttpVerbGET);
             uwr.downloadHandler = new DownloadHandlerFile(job.localSaveUrl);

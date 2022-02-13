@@ -20,6 +20,8 @@ public class InitScene : MonoBehaviour
     public ProgressBar progressBar;
     public TextMeshProUGUI noticeText;
 
+    public Button googleLoginBtn;
+
     void Start()
     {
         resourceVersionFileUrl = ConstValue.awsRootUrl + ConstValue.resourceVersionFileName;
@@ -29,7 +31,12 @@ public class InitScene : MonoBehaviour
         localAssetSaveUrl = Application.persistentDataPath + "/AssetBundles/";
 
         assetBundleInfoLocalUrl = localAssetSaveUrl + ConstValue.assetBundleInfoFileName;
-        
+
+        if (googleLoginBtn)
+        {
+            googleLoginBtn.onClick.AddListener(() => AuthManager.Instance.Login(AuthType.Google));
+            googleLoginBtn.gameObject.SetActive(false);
+        }
 
 
         StartCoroutine(StartAssetBundleDownload());
@@ -61,6 +68,8 @@ public class InitScene : MonoBehaviour
 
         noticeText.SetText("리소스 다운로드 완료");
         progressBar.gameObject.SetActive(false);
+
+        googleLoginBtn.gameObject.SetActive(true);
     }
 
     //리소스 버전정보 파일 다운로드 및 다운받을 리소스 url(resourceVersionDirectory) 지정
