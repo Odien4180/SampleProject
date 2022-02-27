@@ -37,7 +37,7 @@ public class AssetBundleBuilder : MonoBehaviour
     }
 
     //버전 정보 (나중에 인자로 뺼 예정)
-    private static string resourceVersion = "1110";
+    private static string resourceVersion = "1111";
 
 
     static void GetFileList(string path, ref List<AssetBundleBaseInfo> filePathList)

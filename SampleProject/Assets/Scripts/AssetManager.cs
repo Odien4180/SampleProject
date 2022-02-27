@@ -5,33 +5,35 @@ using System.Linq;
 
 public class AssetManager : Singleton<AssetManager>
 {
-    private Dictionary<string, string> luaScriptDic = new Dictionary<string, string>();
-
-    //Load할 Lua스크립트들 모두 여기서 로드?
-    public void LoadAllLuaScript()
+    private Dictionary<string, AssetBundle> assetBundleDic = new Dictionary<string, AssetBundle>();
+    
+    public void AddAssetBundle(AssetBundle assetBundle)
     {
-        
+        if (assetBundleDic.ContainsKey(assetBundle.name))
+        {
+            assetBundleDic[assetBundle.name] = assetBundle;
+
+            Debug.Log("Already added assetbundle : " + assetBundle.name);
+        }
+        else
+        {
+            assetBundleDic.Add(assetBundle.name, assetBundle);
+        }
     }
 
-    public string LoadLuaScript(string _scriptName)
+    public bool GetAssetBundle(string bundleName, ref AssetBundle assetBundle)
     {
-        string path = Application.dataPath + "/LuaScript/" + _scriptName;
-
-        //경로 마지막에 .Lua가 생략 됬을 경우 추가해준다
-        if (path.TakeLast(4).ToString() != ".Lua")
+        if (assetBundleDic.ContainsKey(bundleName))
         {
-            path += ".Lua";
+            assetBundle = assetBundleDic[bundleName];
+
+            return true;
         }
-
-        string[] entireText = System.IO.File.ReadAllLines(path);
-
-        string retText = "";
-
-        for (int i = 0; i < entireText.Length; ++i)
+        else
         {
-            retText += entireText[i];
+            Debug.LogError("Assetbundle not exist : " + bundleName);
+
+            return false;
         }
-        
-        return retText;
     }
 }

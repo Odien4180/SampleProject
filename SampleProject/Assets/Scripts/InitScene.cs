@@ -5,6 +5,7 @@ using System.IO;
 using FileInfoDef;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class InitScene : MonoBehaviour
 {
@@ -20,8 +21,6 @@ public class InitScene : MonoBehaviour
     public ProgressBar progressBar;
     public TextMeshProUGUI noticeText;
 
-    public Button googleLoginBtn;
-
     void Start()
     {
         resourceVersionFileUrl = ConstValue.awsRootUrl + ConstValue.resourceVersionFileName;
@@ -31,13 +30,6 @@ public class InitScene : MonoBehaviour
         localAssetSaveUrl = Application.persistentDataPath + "/AssetBundles/";
 
         assetBundleInfoLocalUrl = localAssetSaveUrl + ConstValue.assetBundleInfoFileName;
-
-        if (googleLoginBtn)
-        {
-            googleLoginBtn.onClick.AddListener(() => AuthManager.Instance.Login(AuthType.Google));
-            googleLoginBtn.gameObject.SetActive(false);
-        }
-
 
         StartCoroutine(StartAssetBundleDownload());
     }
@@ -69,7 +61,7 @@ public class InitScene : MonoBehaviour
         noticeText.SetText("리소스 다운로드 완료");
         progressBar.gameObject.SetActive(false);
 
-        googleLoginBtn.gameObject.SetActive(true);
+        SceneManager.LoadSceneAsync("LoginScene");
     }
 
     //리소스 버전정보 파일 다운로드 및 다운받을 리소스 url(resourceVersionDirectory) 지정
@@ -114,6 +106,12 @@ public class InitScene : MonoBehaviour
 
                 //crc 일치하지 않을 때 (null) 새로 다운로드
                 needDownload = bundleLoadRequest.assetBundle == null;
+
+                //새로 다운로드 할 필요가 없을 경우 에셋 매니저 클래스에 에셋번들 추가
+                if (needDownload == false)
+                {
+                    AssetManager.Instance.AddAssetBundle(bundleLoadRequest.assetBundle);
+                }
             }
 
             if (needDownload)
@@ -124,8 +122,17 @@ public class InitScene : MonoBehaviour
                     localSaveUrl = localAssetSaveUrl + bundleInfo.bundleName,
                     onComplete = x =>
                     {
+                        //다운로드 완료 후 에셋번들 로드
+                        var bundleLoadRequest = AssetBundle.LoadFromFileAsync(localAssetSaveUrl + bundleInfo.bundleName, bundleInfo.crc);
+
+                        //정상적으로 로드 됬다면 에셋 매니저 클래스에 에셋번들 추가
+                        if (bundleLoadRequest.assetBundle != null)
+                        {
+                            AssetManager.Instance.AddAssetBundle(bundleLoadRequest.assetBundle);
+                        }
+
                         if (progressBar) progressBar.Init(downloadStream.currentJobIndex, (float)downloadStream.maxJobSize, true);
-                        
+
                         Debug.Log("Download Complete : " + bundleInfo.bundleName);
                     }
                 });
