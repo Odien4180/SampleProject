@@ -65,7 +65,7 @@ public class InitScene : MonoBehaviour
         progressBar.gameObject.SetActive(false);
 
         //새로 다운로드 받은 에셋번들들 모두 로드
-        foreach(string newAssetbundle in newAssetBundleList)
+        foreach(var newAssetbundle in newAssetBundleList)
         {
             var bundleLoadRequest = AssetBundle.LoadFromFileAsync(localAssetSaveUrl + newAssetbundle.bundleName, newAssetbundle.crc);
 
@@ -105,7 +105,7 @@ public class InitScene : MonoBehaviour
 
         var bundleInfos = JsonUtility.FromJson<AssetBundleInfos>(bundleInfoTextAllLine.AddStringArray());
 
-        if (progressBar) progressBar?.Init(0, bundleInfos.assetBundleInfos.Count, true);
+        if (progressBar) progressBar.Init(0, bundleInfos.assetBundleInfos.Count, true);
 
         foreach(var bundleInfo in bundleInfos.assetBundleInfos)
         {
