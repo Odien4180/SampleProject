@@ -16,6 +16,8 @@ public class InitScene : MonoBehaviour
 
     private string downloadTargetResourceVersionUrl;
 
+    private List<AssetBundleInfo> newAssetBundleList = new List<AssetBundleInfo>();
+
     public DownloadStream downloadStream;
 
     public ProgressBar progressBar;
@@ -35,6 +37,7 @@ public class InitScene : MonoBehaviour
     }
 
     //리소스 버전정보 파일 다운로드 완료 후 해당 리소스 버전 경로의 AssetBundleInfo.json을 받는다.
+    //그 후 AssetBundleInfo.json에 기록되 있는 정보를 토대로 에셋번들들을 다운로드 받는다.
     private IEnumerator StartAssetBundleDownload()
     {
         noticeText.gameObject.SetActive(true);
@@ -60,6 +63,19 @@ public class InitScene : MonoBehaviour
 
         noticeText.SetText("리소스 다운로드 완료");
         progressBar.gameObject.SetActive(false);
+
+        //새로 다운로드 받은 에셋번들들 모두 로드
+        foreach(string newAssetbundle in newAssetBundleList)
+        {
+            var bundleLoadRequest = AssetBundle.LoadFromFileAsync(localAssetSaveUrl + newAssetbundle.bundleName, newAssetbundle.crc);
+
+            yield return bundleLoadRequest;
+
+            if (bundleLoadRequest != null)
+            {
+                AssetManager.Instance.AddAssetBundle(bundleLoadRequest.assetBundle);
+            }
+        }
 
         SceneManager.LoadSceneAsync("LoginScene");
     }
@@ -106,6 +122,11 @@ public class InitScene : MonoBehaviour
 
                 //crc 일치하지 않을 때 (null) 새로 다운로드
                 needDownload = bundleLoadRequest.assetBundle == null;
+
+                if (needDownload == false)
+                {
+                    AssetManager.Instance.AddAssetBundle(bundleLoadRequest.assetBundle);
+                }
             }
 
             if (needDownload)
@@ -121,7 +142,8 @@ public class InitScene : MonoBehaviour
                         Debug.Log("Download Complete : " + bundleInfo.bundleName);
                     }
                 });
-
+                //다운로드 완료 후 에셋 번들 로드를 하기 위해 리스트 추가
+                newAssetBundleList.Add(bundleInfo);
                 Debug.Log("Reservation Download : " + bundleInfo.bundleName);
             }
             else
