@@ -30,7 +30,7 @@ public class ProgressBar : MonoBehaviour
 
 
         text?.gameObject.SetActive(_showText);
-        text?.SetText(_current + "/" + _max);
+        text?.SetText(CHString.StringBuild(_current.ToString(), "/", _max.ToString()));
     }
 
 }
