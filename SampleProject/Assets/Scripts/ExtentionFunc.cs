@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using UnityEngine;
 
 public static class ExtentionFunc
@@ -14,16 +15,28 @@ public static class ExtentionFunc
         }
     }
 
-    //스트링 배열 전부 더하기
-    public static string AddStringArray(this string[] stringArray)
+    
+}
+
+public static class CHString
+{
+    //스트링빌더 사용해서 문자열 합성
+    public static string StringBuild(params string[] str)
     {
-        string retString = "";
-
-        for (int i = 0; i < stringArray.Length; ++i)
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < str.Length; ++i)
         {
-            retString += stringArray[i];
+            sb.Append(sb);
         }
+        return sb.ToString();
+    }
+}
 
-        return retString;
+public static class CHDebug
+{
+    //스트링빌더 사용해서 합성한 문자열로 로그 출력
+    public static void Log(params string[] str)
+    {
+        Debug.Log(CHString.StringBuild(str));
     }
 }

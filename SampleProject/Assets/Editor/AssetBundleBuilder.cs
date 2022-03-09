@@ -87,7 +87,7 @@ public class AssetBundleBuilder : MonoBehaviour
         {
             //manifestFile 이름에서 확장자때는걸로 에셋번들 이름 가져오기
             var assetName = Path.GetFileNameWithoutExtension(manifestFile);
-
+            
             string assetLocalPath = bundleFolder + "/" + assetName;
             
             BuildPipeline.GetCRCForAssetBundle(assetLocalPath, out uint crcForAssetBundle);

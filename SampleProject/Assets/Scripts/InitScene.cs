@@ -25,13 +25,13 @@ public class InitScene : MonoBehaviour
 
     void Start()
     {
-        resourceVersionFileUrl = ConstValue.awsRootUrl + ConstValue.resourceVersionFileName;
+        resourceVersionFileUrl = CHString.StringBuild(ConstValue.awsRootUrl, ConstValue.resourceVersionFileName);
 
-        resourceVersionLocalFileUrl = Application.persistentDataPath + "/" + ConstValue.resourceVersionFileName;
+        resourceVersionLocalFileUrl = CHString.StringBuild(Application.persistentDataPath, "/", ConstValue.resourceVersionFileName);
 
-        localAssetSaveUrl = Application.persistentDataPath + "/AssetBundles/";
+        localAssetSaveUrl = CHString.StringBuild(Application.persistentDataPath, "/AssetBundles/");
 
-        assetBundleInfoLocalUrl = localAssetSaveUrl + ConstValue.assetBundleInfoFileName;
+        assetBundleInfoLocalUrl = CHString.StringBuild(localAssetSaveUrl, ConstValue.assetBundleInfoFileName);
 
         StartCoroutine(StartAssetBundleDownload());
     }
@@ -49,7 +49,7 @@ public class InitScene : MonoBehaviour
         noticeText.SetText("리소스 파일 검사중...");
 
         var downloadAssetInfo = new DownloadInfo();
-        downloadAssetInfo.downloadUrl = downloadTargetResourceVersionUrl + "/AssetBundles/" + ConstValue.assetBundleInfoFileName;
+        downloadAssetInfo.downloadUrl = CHString.StringBuild(downloadTargetResourceVersionUrl, "/AssetBundles/", ConstValue.assetBundleInfoFileName);
         downloadAssetInfo.localSaveUrl = assetBundleInfoLocalUrl;
 
         downloadStream.SetDownloadStream(null, downloadAssetInfo);
@@ -67,7 +67,7 @@ public class InitScene : MonoBehaviour
         //새로 다운로드 받은 에셋번들들 모두 로드
         foreach(var newAssetbundle in newAssetBundleList)
         {
-            var bundleLoadRequest = AssetBundle.LoadFromFileAsync(localAssetSaveUrl + newAssetbundle.bundleName, newAssetbundle.crc);
+            var bundleLoadRequest = AssetBundle.LoadFromFileAsync(CHString.StringBuild(localAssetSaveUrl, newAssetbundle.bundleName), newAssetbundle.crc);
 
             yield return bundleLoadRequest;
 
@@ -92,8 +92,8 @@ public class InitScene : MonoBehaviour
         yield return downloadStream.OnWork();
 
         string[] bundleInfoText = File.ReadAllLines(resourceVersionLocalFileUrl);
-        var resourceVersionInfo = JsonUtility.FromJson<ResourceVersionInfo>(bundleInfoText.AddStringArray());
-        downloadTargetResourceVersionUrl = ConstValue.awsRootUrl + resourceVersionInfo.version;
+        var resourceVersionInfo = JsonUtility.FromJson<ResourceVersionInfo>(CHString.StringBuild(bundleInfoText));
+        downloadTargetResourceVersionUrl = CHString.StringBuild(ConstValue.awsRootUrl, resourceVersionInfo.version);
     }
 
     //다운받은 AssetBundleInfo.json을 로드해서 현재 가지고있는 에셋들과 crc값 비교
@@ -103,20 +103,20 @@ public class InitScene : MonoBehaviour
         List<DownloadInfo> downloadInfos = new List<DownloadInfo>();
         string[] bundleInfoTextAllLine = File.ReadAllLines(assetBundleInfoLocalUrl);
 
-        var bundleInfos = JsonUtility.FromJson<AssetBundleInfos>(bundleInfoTextAllLine.AddStringArray());
+        var bundleInfos = JsonUtility.FromJson<AssetBundleInfos>(CHString.StringBuild(bundleInfoTextAllLine));
 
         if (progressBar) progressBar.Init(0, bundleInfos.assetBundleInfos.Count, true);
 
         foreach(var bundleInfo in bundleInfos.assetBundleInfos)
         {
-            FileInfo fileInfo = new FileInfo(localAssetSaveUrl + bundleInfo.bundleName);
+            FileInfo fileInfo = new FileInfo(CHString.StringBuild(localAssetSaveUrl, bundleInfo.bundleName));
 
             bool needDownload = true;
 
             //파일 존재하면 crc검증
             if (fileInfo.Exists)
             {
-                var bundleLoadRequest = AssetBundle.LoadFromFileAsync(localAssetSaveUrl + bundleInfo.bundleName, bundleInfo.crc);
+                var bundleLoadRequest = AssetBundle.LoadFromFileAsync(CHString.StringBuild(localAssetSaveUrl, bundleInfo.bundleName), bundleInfo.crc);
 
                 yield return bundleLoadRequest;
 
@@ -133,29 +133,29 @@ public class InitScene : MonoBehaviour
             {
                 downloadInfos.Add(new DownloadInfo()
                 {
-                    downloadUrl = downloadTargetResourceVersionUrl + "/AssetBundles/" + bundleInfo.bundleName,
+                    downloadUrl = CHString.StringBuild(downloadTargetResourceVersionUrl, "/AssetBundles/", bundleInfo.bundleName),
                     localSaveUrl = localAssetSaveUrl + bundleInfo.bundleName,
                     onComplete = x =>
                     {
                         if (progressBar) progressBar.Init(downloadStream.currentJobIndex, (float)downloadStream.maxJobSize, true);
 
-                        Debug.Log("Download Complete : " + bundleInfo.bundleName);
+                        CHDebug.Log("Download Complete : ", bundleInfo.bundleName);
                     }
                 });
                 //다운로드 완료 후 에셋 번들 로드를 하기 위해 리스트 추가
                 newAssetBundleList.Add(bundleInfo);
-                Debug.Log("Reservation Download : " + bundleInfo.bundleName);
+                CHDebug.Log("Reservation Download : ", bundleInfo.bundleName);
             }
             else
             {
                 //동일한 에셋 이미 저장되어 있음
-                Debug.Log("Already Exist : " + bundleInfo.bundleName);
+                CHDebug.Log("Already Exist : ", bundleInfo.bundleName);
             }
         }
 
         downloadStream.SetDownloadStream(x =>
         {
-            Debug.Log("Download Stream Complete");
+            CHDebug.Log("Download Stream Complete");
         }, downloadInfos.ToArray());
 
         yield return downloadStream.OnWork();
