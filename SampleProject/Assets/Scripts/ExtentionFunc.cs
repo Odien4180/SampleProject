@@ -26,7 +26,7 @@ public static class CHString
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < str.Length; ++i)
         {
-            sb.Append(sb);
+            sb.Append(str[i]);
         }
         return sb.ToString();
     }
